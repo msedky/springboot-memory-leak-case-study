@@ -36,6 +36,29 @@ src/main/java/org/jvmmemoryleak/case01/
 
 ---
 
+## 🔍 Monitoring Endpoint
+
+The application exposes a shared diagnostic endpoint to monitor JVM heap usage:
+
+```http
+GET /case01/common/heap
+```
+
+Example response:
+
+```json
+{
+  "used_mb": 210,
+  "free_mb": 120,
+  "total_mb": 512,
+  "max_mb": 512
+}
+```
+
+This endpoint is used during load testing to observe memory growth and verify stabilization after applying the fix.
+
+---
+
 ## ⚠️ Buggy Implementation
 
 ### Endpoints:

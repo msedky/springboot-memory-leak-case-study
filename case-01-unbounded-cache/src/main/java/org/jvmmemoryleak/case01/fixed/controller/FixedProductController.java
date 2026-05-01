@@ -7,8 +7,6 @@ import org.jvmmemoryleak.case01.common.payload.response.ApiResponse;
 import org.jvmmemoryleak.case01.fixed.service.FixedProductService;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/case01/fixed/products")
 @RequiredArgsConstructor
@@ -51,23 +49,5 @@ public class FixedProductController {
     @DeleteMapping("/cache")
     public void clearCache() {
         service.clearCache();
-    }
-
-    @GetMapping("/heap")
-    public Map<String, Object> heapInfo() {
-
-        Runtime runtime = Runtime.getRuntime();
-
-        long totalMemory = runtime.totalMemory();
-        long freeMemory = runtime.freeMemory();
-        long usedMemory = totalMemory - freeMemory;
-        long maxMemory = runtime.maxMemory();
-
-        return Map.of(
-                "used_mb", usedMemory / (1024 * 1024),
-                "free_mb", freeMemory / (1024 * 1024),
-                "total_mb", totalMemory / (1024 * 1024),
-                "max_mb", maxMemory / (1024 * 1024)
-        );
     }
 }
