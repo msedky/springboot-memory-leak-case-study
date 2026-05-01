@@ -1,4 +1,4 @@
-package org.jvmmemoryleak;
+package org.jvmmemoryleak.case01;
 
 import org.springframework.boot.SpringApplication;
 
