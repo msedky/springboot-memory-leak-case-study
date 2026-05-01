@@ -54,18 +54,18 @@ public class BuggyProductService {
         CACHE.remove(id);
     }
 
-    private ProductDto getFromDb(Long id) {
-        ProductEntity productEntity = productRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
-        return productMapper.toDto(productEntity);
-    }
-
     public int getCacheSize() {
         return CACHE.size();
     }
 
     public void clearCache() {
         CACHE.clear();
+    }
+
+    private ProductDto getFromDb(Long id) {
+        ProductEntity productEntity = productRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Product not found with id: " + id));
+        return productMapper.toDto(productEntity);
     }
 
 }

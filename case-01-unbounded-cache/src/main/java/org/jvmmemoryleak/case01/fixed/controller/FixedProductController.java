@@ -1,31 +1,73 @@
 package org.jvmmemoryleak.case01.fixed.controller;
 
+import lombok.RequiredArgsConstructor;
 import org.jvmmemoryleak.case01.common.dto.ProductDto;
+import org.jvmmemoryleak.case01.common.payload.request.ProductRequest;
+import org.jvmmemoryleak.case01.common.payload.response.ApiResponse;
 import org.jvmmemoryleak.case01.fixed.service.FixedProductService;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/case01/fixed/products")
+@RequiredArgsConstructor
 public class FixedProductController {
 
     private final FixedProductService service;
 
-    public FixedProductController(FixedProductService service) {
-        this.service = service;
+
+    @PostMapping
+    public ApiResponse<ProductDto> create(@RequestBody ProductRequest request) {
+        return ApiResponse.created(service.create(request));
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<ProductDto> update(@PathVariable Long id, @RequestBody ProductRequest request) {
+        return ApiResponse.ok(service.update(id, request));
     }
 
     @GetMapping("/{id}")
-    public ProductDto getProduct(@PathVariable Long id) {
-        return service.getProduct(id);
+    public ApiResponse<ProductDto> get(@PathVariable Long id) {
+        return ApiResponse.ok(service.get(id));
+    }
+
+    @GetMapping
+    public ApiResponse<Iterable<ProductDto>> getAll() {
+        return ApiResponse.ok(service.getAll());
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse delete(@PathVariable Long id) {
+        service.delete(id);
+        return ApiResponse.ok(null);
     }
 
     @GetMapping("/cache-size")
-    public Long cacheSize() {
+    public int cacheSize() {
         return service.getCacheSize();
     }
 
     @DeleteMapping("/cache")
     public void clearCache() {
         service.clearCache();
+    }
+
+    @GetMapping("/heap")
+    public Map<String, Object> heapInfo() {
+
+        Runtime runtime = Runtime.getRuntime();
+
+        long totalMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
+        long usedMemory = totalMemory - freeMemory;
+        long maxMemory = runtime.maxMemory();
+
+        return Map.of(
+                "used_mb", usedMemory / (1024 * 1024),
+                "free_mb", freeMemory / (1024 * 1024),
+                "total_mb", totalMemory / (1024 * 1024),
+                "max_mb", maxMemory / (1024 * 1024)
+        );
     }
 }
