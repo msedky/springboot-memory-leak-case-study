@@ -20,7 +20,7 @@ case-01-unbounded-cache/
 ├── k6/                  # Load testing scripts
 ├── docs/
 │   ├── screenshots/     # MAT + results screenshots
-│	├── heapdump/            # Generated heap dumps
+│   └── heapdump/        # Generated heap dumps
 ├── pom.xml
 └── README.md
 ```
@@ -38,18 +38,23 @@ src/main/java/org/jvmmemoryleak/case01/
 
 ## ⚠️ Buggy Implementation
 
-Endpoints:
+### Endpoints:
 
 ```http
-POST /case01/buggy/products
-GET  /case01/buggy/products/{id}
-GET  /case01/buggy/products/cache-size
-GET  /case01/buggy/products/heap
+POST   /case01/buggy/products
+PUT    /case01/buggy/products/{id}
+GET    /case01/buggy/products/{id}
+GET    /case01/buggy/products
+DELETE /case01/buggy/products/{id}
+
+GET    /case01/buggy/products/cache-size
+DELETE /case01/buggy/products/cache
+GET    /case01/buggy/products/heap
 ```
 
 ### Problem
 
-* Cache is implemented using `ConcurrentHashMap`
+* Cache is implemented **manually** using `ConcurrentHashMap`
 * No eviction policy
 * Objects remain strongly referenced
 
@@ -61,17 +66,20 @@ Unbounded memory growth
 
 ---
 
-## 🧪 Running the Test
+### 🧪 Running the Buggy Test
 
-### 1️⃣ Run application with JVM options:
+#### 1️⃣ Run application with JVM options:
 
 ```text
--Xms512m -Xmx512m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=./docs/heapdump/heapdump.hprof
+-Xms512m 
+-Xmx512m 
+-XX:+HeapDumpOnOutOfMemoryError 
+-XX:HeapDumpPath=./docs/heapdump/heapdump.hprof
 ```
 
 ---
 
-### 2️⃣  Running Buggy Test
+#### 2️⃣ Run Buggy Test
 
 ```bash
 cd case-01-unbounded-cache/k6
@@ -80,7 +88,7 @@ k6 run buggy-cache-load-test.js
 
 ---
 
-## 💣 Expected Result (Buggy)
+### 💣 Expected Result (Buggy)
 
 ```text
 cache-size ↑ continuously
@@ -91,14 +99,14 @@ heap ↑ continuously
 Heap dump will be generated in:
 
 ```text
-heapdump/heapdump.hprof
+docs/heapdump/heapdump.hprof
 ```
 
 ---
 
-## 🔍 Heap Dump Analysis
+### 🔍 Heap Dump Analysis
 
-Open the heap dump using:
+We analyze the heap dump using:
 
 ```text
 Eclipse MAT (Memory Analyzer Tool)
@@ -106,7 +114,107 @@ Eclipse MAT (Memory Analyzer Tool)
 
 ---
 
-### Key Findings:
+#### 🔬 Step-by-Step Heap Analysis
+
+##### 1️⃣ Open Eclipse MAT
+
+Run:
+
+```text
+MemoryAnalyzer.exe
+```
+
+---
+
+##### 2️⃣ Open Heap Dump
+
+From top menu:
+
+```text
+File → Open Heap Dump
+```
+
+Choose file:
+
+```text
+springboot-memory-leak-case-study/
+  case-01-unbounded-cache/
+    docs/
+      heapdump/
+        heapdump.hprof
+```
+
+📸 See: `01.png`
+
+---
+
+##### 3️⃣ Initial Screen
+
+MAT shows:
+
+```text
+Overview + Leak Suspects dialog
+```
+
+Click:
+
+```text
+Finish
+```
+
+📸 See: `02.png`
+
+---
+
+##### 4️⃣ Leak Suspects Report
+
+You will see a pie chart.
+
+👉 Important:
+
+```text
+(a) Problem Suspect 1 occupies most of heap memory
+```
+
+📸 See: `03.png`
+
+---
+
+##### 5️⃣ Investigate Main Suspect
+
+Click:
+
+```text
+(a) Problem Suspect 1
+```
+
+Then:
+
+```text
+List objects → with outgoing references
+```
+
+📸 See: `04.png`
+
+---
+
+##### 6️⃣ Why Outgoing References?
+
+Because it shows:
+
+```text
+What objects are being held in memory
+```
+
+NOT:
+
+```text
+Who references them
+```
+
+---
+
+##### 7️⃣ Root Cause Discovery
 
 ```text
 BuggyProductService
@@ -115,34 +223,40 @@ BuggyProductService
       → large String (description)
 ```
 
-👉 Root cause:
-
-```text
-Unbounded cache retains objects → prevents GC → memory exhaustion
-```
+📸 See: `05.png`
 
 ---
 
-## 📸 Screenshots
-
-Add screenshots under:
+#### 🧩 Root Cause Analysis
 
 ```text
-docs/screenshots/
+Because the cache has no eviction policy:
+
+The ConcurrentHashMap cache retains all ProductDto objects
+→ prevents garbage collection
+→ causes continuous heap growth
+→ leads to OutOfMemoryError
 ```
-
-Recommended:
-
-* Leak Suspects
-* Dominator Tree
-* Histogram
-* Cache growth vs heap growth
 
 ---
 
 ## ✅ Fixed Implementation
 
-Configuration:
+### Endpoints
+
+```http
+POST   /case01/fixed/products
+PUT    /case01/fixed/products/{id}
+GET    /case01/fixed/products/{id}
+GET    /case01/fixed/products
+DELETE /case01/fixed/products/{id}
+
+GET    /case01/fixed/products/cache-size
+DELETE /case01/fixed/products/cache
+GET    /case01/fixed/products/heap
+```
+
+### Configuration
 
 ```yaml
 spring:
@@ -154,19 +268,15 @@ spring:
       spec: maximumSize=1000,expireAfterWrite=1m
 ```
 
----
-
-### Behavior
+### Key Difference
 
 ```text
-Cache size stabilizes (~1000)
-Heap stabilizes
-No OutOfMemoryError
+Cache is managed using Spring Cache abstraction backed by Caffeine
 ```
 
 ---
 
-## 🔁 Running Fixed Test
+### 🔁 Running Fixed Test
 
 ```bash
 cd case-01-unbounded-cache/k6
@@ -175,22 +285,35 @@ k6 run fixed-cache-load-test.js
 
 ---
 
+### 📈 Expected Behavior (Fixed)
+
+```text
+Cache size stabilizes around configured maximum (~1000)
+Eviction removes older entries
+Heap usage stabilizes
+No OutOfMemoryError under load
+```
+
+---
+
 ## 📊 Comparison
 
-| Metric     | Buggy        | Fixed  |
-| ---------- | ------------ | ------ |
-| Cache Size | Unlimited ↑  | ~1000  |
-| Heap Usage | Continuous ↑ | Stable |
-| OOM        | Yes 💣       | No ✅   |
+| Metric      | Buggy         | Fixed  |
+| ----------- | ------------- | ------ |
+| Cache Size  | Unlimited ↑   | ~1000  |
+| Heap Usage  | Continuous ↑  | Stable |
+| GC Behavior | High pressure | Normal |
+| OOM         | Yes 💣        | No ✅   |
 
 ---
 
 ## ⚠️ Important Notes
 
-* Delete old heap dump before rerun:
+Before rerun:
 
 ```text
-heapdump/heapdump.hprof
+Delete:
+docs/heapdump/heapdump.hprof
 ```
 
 Otherwise:
@@ -201,9 +324,9 @@ Unable to create heapdump.hprof: File exists
 
 ---
 
-## 💡 Key Takeaway
+## 💡 Final Takeaway
 
-> In-memory caching without eviction is a production risk.
+> Unbounded in-memory caching is a critical production risk that can lead to system crashes under load.
 
 Always define:
 
