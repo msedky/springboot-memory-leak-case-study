@@ -147,6 +147,8 @@ Run:
 MemoryAnalyzer.exe
 ```
 
+📸 See: `00.png`
+
 ---
 
 ##### 2️⃣ Open Heap Dump
@@ -171,15 +173,17 @@ springboot-memory-leak-case-study/
 
 ---
 
-##### 3️⃣ Initial Screen
+##### 3️⃣ Generate Leak Suspects Report
 
-MAT shows:
+After opening the heap dump, MAT shows the Getting Started Wizard.
+
+Choose:
 
 ```text
-Overview + Leak Suspects dialog
+Leak Suspects Report
 ```
 
-Click:
+Then click:
 
 ```text
 Finish
@@ -189,62 +193,59 @@ Finish
 
 ---
 
-##### 4️⃣ Leak Suspects Report
+##### 4️⃣ Review Leak Suspects Report
 
-You will see a pie chart.
+MAT generates a Leak Suspects report with a memory usage pie chart.
 
-👉 Important:
+👉 The important observation is:
 
 ```text
 (a) Problem Suspect 1 occupies most of heap memory
+```
+
+In this case, MAT points to:
+
+```text
+org.jvmmemoryleak.case01.buggy.service.BuggyProductService
 ```
 
 📸 See: `03.png`
 
 ---
 
-##### 5️⃣ Investigate Main Suspect
+##### 5️⃣ Inspect the Suspect Object
 
-Click:
+Open the suspect details and inspect the outgoing references.
 
-```text
-(a) Problem Suspect 1
-```
+This shows what the suspect object is holding in memory.
 
-Then:
+In the result, we can see that:
 
 ```text
-List objects → with outgoing references
+BuggyProductService
+  → CACHE
+  → ConcurrentHashMap
 ```
 
 📸 See: `04.png`
 
 ---
 
-##### 6️⃣ Why Outgoing References?
+##### 6️⃣ Expand the Cache Entries
 
-Because it shows:
+Expand the ConcurrentHashMap internal table entries.
 
-```text
-What objects are being held in memory
-```
-
-NOT:
+MAT shows many retained entries inside the cache:
 
 ```text
-Who references them
+ConcurrentHashMap
+  → Node[]
+  → ConcurrentHashMap$Node
+  → key
+  → value
 ```
 
----
-
-##### 7️⃣ Root Cause Discovery
-
-```text
-BuggyProductService
-  → CACHE (ConcurrentHashMap)
-    → ProductDto
-      → large String (description)
-```
+Each node represents a cached product entry that is still strongly referenced.
 
 📸 See: `05.png`
 
@@ -252,13 +253,23 @@ BuggyProductService
 
 #### 🧩 Root Cause Analysis
 
+The root cause is the static/manual cache inside the buggy service:
+
 ```text
+BuggyProductService
+  → CACHE (ConcurrentHashMap)
+    → ProductDto objects
+      → large description strings
+```
+
 Because the cache has no eviction policy:
 
-The ConcurrentHashMap cache retains all ProductDto objects
-→ prevents garbage collection
-→ causes continuous heap growth
-→ leads to OutOfMemoryError
+```text
+The ConcurrentHashMap grows without any size limit or eviction policy
+→ cached ProductDto objects remain strongly referenced
+→ garbage collector cannot remove them
+→ heap usage keeps increasing
+→ application eventually crashes with OutOfMemoryError
 ```
 
 ---
