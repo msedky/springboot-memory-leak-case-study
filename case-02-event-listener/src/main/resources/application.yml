@@ -1,0 +1,11 @@
+server:
+  port: 8042
+spring:
+  application:
+    name: case-02-event-listener
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,metrics
