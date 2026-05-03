@@ -1,8 +1,6 @@
 package org.jvmmemoryleak.case01.common.payload.request;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
@@ -22,6 +20,7 @@ public class ProductRequest {
     private String description;
 
     @NotNull
-    @Size(min = 0, max = 9999999)
+    @DecimalMin("0.00")
+    @DecimalMax("9999999.99")
     private BigDecimal price;
 }
