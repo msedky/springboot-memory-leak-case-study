@@ -35,7 +35,7 @@ public class BuggyProductController {
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse delete(@PathVariable Long id) {
+    public ApiResponse<Void> delete(@PathVariable Long id) {
         service.delete(id);
         return ApiResponse.ok(null);
     }
