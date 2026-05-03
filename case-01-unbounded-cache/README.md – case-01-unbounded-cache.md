@@ -72,7 +72,6 @@ DELETE /case01/buggy/products/{id}
 
 GET    /case01/buggy/products/cache-size
 DELETE /case01/buggy/products/cache
-GET    /case01/buggy/products/heap
 ```
 
 ### Problem
@@ -287,7 +286,6 @@ DELETE /case01/fixed/products/{id}
 
 GET    /case01/fixed/products/cache-size
 DELETE /case01/fixed/products/cache
-GET    /case01/fixed/products/heap
 ```
 
 ### Configuration
