@@ -1,4 +1,4 @@
-# 🚨 Case 02 — Underegistered Event Listeners → OutOfMemoryError
+# 🚨 Case 02 — Unregistered Event Listeners → OutOfMemoryError
 
 ## 📌 Overview
 
