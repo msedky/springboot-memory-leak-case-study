@@ -3,7 +3,10 @@ server:
 spring:
   application:
     name: case-02-event-listener
-
+  jackson:
+    datatype:
+      datetime:
+        write-dates-as-timestamps: true
 management:
   endpoints:
     web:

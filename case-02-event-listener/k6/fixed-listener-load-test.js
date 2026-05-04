@@ -6,14 +6,17 @@ export const options = {
   duration: '2m',
 };
 
-const BASE_URL = 'http://localhost:8042/case02/fixed/tracking';
+const BASE_URL = 'http://localhost:8042/case02/fixed/orders';
 
 export default function () {
   const orderId = Math.floor(Math.random() * 1000000000);
 
+
+  // Same payload as buggy test — same load, same conditions, different implementation
   const payload = JSON.stringify({
     userId: `user-${__VU}-${__ITER}`,
-    sessionPayload: 'S'.repeat(50000)
+    shippingAddress: 'S'.repeat(50000),
+	estimatedDelivery: '2026-07-01'
   });
 
   const params = {
@@ -24,6 +27,11 @@ export default function () {
   };
 
   const response = http.post(`${BASE_URL}/${orderId}`, payload, params);
+
+  if (response.status !== 200 && response.status !== 201) {
+    console.log(`❌ Status: ${response.status}`);
+    console.log(response.body);
+  }
 
   check(response, {
     'status is 200 or 201': (r) => r.status === 200 || r.status === 201,
