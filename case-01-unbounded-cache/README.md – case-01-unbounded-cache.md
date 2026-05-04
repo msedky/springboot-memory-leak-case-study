@@ -55,7 +55,22 @@ Example response:
 }
 ```
 
-This endpoint is used during load testing to observe memory growth and verify stabilization after applying the fix.
+👉 While running the k6 load test, call this endpoint repeatedly from Postman to observe heap growth over time.
+
+---
+
+## 🏢 Business Scenario
+
+An e-commerce platform serves millions of products. To avoid hitting the 
+database on every request, a developer added an in-memory cache to the 
+product catalog service.
+
+The cache was implemented manually using a static ConcurrentHashMap with 
+no size limit and no eviction policy. In development with a small product 
+catalog, everything worked fine.
+
+In production, with millions of unique product IDs being requested, 
+the cache grew indefinitely — eventually exhausting the heap.
 
 ---
 
