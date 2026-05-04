@@ -250,6 +250,28 @@ Each node represents a cached product entry that is still strongly referenced.
 
 ---
 
+##### 7️⃣ Inspect a Single Cache Entry
+
+Expand a single `ConcurrentHashMap$Node` to reveal the retained `ProductDto` object.
+
+This confirms exactly what is being held in memory per cache entry:
+
+```text
+ConcurrentHashMap$Node
+  → val: ProductDto
+    → id
+    → name
+    → description (200,000 chars — large String)
+    → price
+```
+
+Each `ProductDto` retains a 200,000 character description string.
+With thousands of entries, this alone fills the heap.
+
+📸 See: `06.png`
+
+---
+
 #### 🧩 Root Cause Analysis
 
 The root cause is the static/manual cache inside the buggy service:
@@ -258,7 +280,8 @@ The root cause is the static/manual cache inside the buggy service:
 BuggyProductService
   → CACHE (ConcurrentHashMap)
     → ProductDto objects
-      → large description strings
+      → description field: 200,000 chars per object (~200KB per entry)
+      → 3,072 entries × ~200KB = ~600MB retained in heap
 ```
 
 Because the cache has no eviction policy:
